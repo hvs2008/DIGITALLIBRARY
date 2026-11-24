@@ -1,242 +1,317 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Digital Public Library</title>
+    <title>Digital Public Library and Book Exchange System</title>
 
     <link rel="stylesheet" href="style.css">
+
 </head>
 
 <body>
 
-    <!-- HEADER -->
-    <header class="header">
-        <h1>Digital Public Library</h1>
-        <p>Donate, Borrow, Return and Exchange Books</p>
-    </header>
+    <div class="dashboard-container">
 
-    <!-- NAVIGATION -->
-    <nav class="navbar">
-        <a href="#dashboard">Dashboard</a>
-        <a href="#addBook">Add Book</a>
-        <a href="#availableBooks">Available Books</a>
-        <a href="#borrowings">Borrowings</a>
-        <a href="#exchange">Book Exchange</a>
-        <a href="#deleteBook">Delete Book</a>
-    </nav>
+        <!-- SIDEBAR -->
 
-    <main class="container">
+        <aside class="sidebar">
 
-        <!-- DASHBOARD -->
-        <section id="dashboard" class="section">
+            <h2>BookHub</h2>
 
-            <h2>Library Dashboard</h2>
+            <nav>
 
-            <div class="dashboard">
+                <a href="#dashboard">Dashboard</a>
 
-                <div class="stat-card">
-                    <h3>Total Books</h3>
-                    <p id="totalCount">0</p>
+                <a href="#addBook">Add Book</a>
+
+                <a href="#availableBooks">Available Books</a>
+
+                <a href="#borrowings">Borrowings</a>
+
+                <a href="#exchange">Book Exchange</a>
+
+                <a href="#deleteBook">Delete Book</a>
+
+            </nav>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+
+            <!-- HEADER -->
+
+            <header class="top-header">
+
+                <h1>Library Dashboard</h1>
+
+                <p>Administrator</p>
+
+            </header>
+
+
+            <!-- DASHBOARD -->
+
+            <section id="dashboard">
+
+                <h2>Dashboard Overview</h2>
+
+                <div class="dashboard-cards">
+
+                    <div class="dashboard-card">
+
+                        <h3>Total Books</h3>
+
+                        <p id="totalCount">0</p>
+
+                    </div>
+
+
+                    <div class="dashboard-card">
+
+                        <h3>Available Books</h3>
+
+                        <p id="availableCount">0</p>
+
+                    </div>
+
+
+                    <div class="dashboard-card">
+
+                        <h3>Borrowed Books</h3>
+
+                        <p id="borrowedCount">0</p>
+
+                    </div>
+
+
+                    <div class="dashboard-card">
+
+                        <h3>Total Exchanges</h3>
+
+                        <p id="exchangeCount">0</p>
+
+                    </div>
+
                 </div>
 
-                <div class="stat-card">
-                    <h3>Available Books</h3>
-                    <p id="availableCount">0</p>
+            </section>
+
+
+            <!-- ADD BOOK -->
+
+            <section id="addBook">
+
+                <h2>Add New Book</h2>
+
+                <form id="addBookForm">
+
+                    <input
+                        type="text"
+                        id="title"
+                        placeholder="Book Title"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="author"
+                        placeholder="Author Name"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="category"
+                        placeholder="Book Category"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="donor"
+                        placeholder="Donor Name"
+                        required
+                    >
+
+                    <button type="submit">
+                        Add Book
+                    </button>
+
+                    <p id="addMessage"></p>
+
+                </form>
+
+            </section>
+
+
+            <!-- AVAILABLE BOOKS -->
+
+            <section id="availableBooks">
+
+                <h2>Available Books</h2>
+
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Search books by title"
+                >
+
+                <div id="bookList"></div>
+
+            </section>
+
+
+            <!-- BORROWINGS -->
+
+            <section id="borrowings">
+
+                <h2>Borrowed Books</h2>
+
+                <form id="returnForm">
+
+                    <input
+                        type="text"
+                        id="returnBorrowingId"
+                        placeholder="Enter Borrowing ID"
+                        required
+                    >
+
+                    <button type="submit">
+                        Return Book
+                    </button>
+
+                </form>
+
+                <h3>Borrowing Records</h3>
+
+                <div id="borrowingList"></div>
+
+            </section>
+
+
+            <!-- BOOK EXCHANGE -->
+
+            <section id="exchange">
+
+                <h2>Book Exchange System</h2>
+
+                <p>
+                    Submit a request to exchange your book
+                    with another available book.
+                </p>
+
+
+                <!-- REQUEST FORM -->
+
+                <form id="exchangeForm">
+
+                    <input
+                        type="text"
+                        id="requesterName"
+                        placeholder="Requester Name"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="offeredBookId"
+                        placeholder="Offered Book ID (AB123)"
+                        pattern="[A-Za-z]{2}[0-9]{3}"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        id="requestedBookId"
+                        placeholder="Requested Book ID (CD456)"
+                        pattern="[A-Za-z]{2}[0-9]{3}"
+                        required
+                    >
+
+                    <button type="submit">
+                        Submit Exchange Request
+                    </button>
+
+                </form>
+
+
+                <hr>
+
+                <!-- ADMINISTRATOR MANAGEMENT -->
+
+                <h2>Exchange Request Management</h2>
+
+                <p>
+                    Administrator can change the status
+                    of every exchange request.
+                </p>
+
+                <div id="exchangeList">
+
+                    <!-- Exchange records appear here -->
+
                 </div>
 
-                <div class="stat-card">
-                    <h3>Borrowed Books</h3>
-                    <p id="borrowedCount">0</p>
-                </div>
-
-                <div class="stat-card">
-                    <h3>Exchange Requests</h3>
-                    <p id="exchangeCount">0</p>
-                </div>
-
-            </div>
-
-            <button type="button" onclick="refreshAll()">
-                Refresh Dashboard
-            </button>
-
-        </section>
+            </section>
 
 
-        <!-- ADD BOOK -->
-        <section id="addBook" class="section">
+            <!-- DELETE BOOK -->
 
-            <h2>Donate / Add a Book</h2>
+            <section id="deleteBook">
 
-            <form id="addBookForm">
+                <h2>Delete Book</h2>
 
-                <input
-                    type="text"
-                    id="title"
-                    placeholder="Enter Book Title"
-                    required
-                >
+                <form id="deleteForm">
 
-                <input
-                    type="text"
-                    id="author"
-                    placeholder="Enter Author Name"
-                    required
-                >
+                    <input
+                        type="text"
+                        id="deleteBookId"
+                        placeholder="Enter Book ID (AB123)"
+                        pattern="[A-Za-z]{2}[0-9]{3}"
+                        required
+                    >
 
-                <input
-                    type="text"
-                    id="category"
-                    placeholder="Enter Category"
-                >
+                    <button type="submit">
+                        Delete Book
+                    </button>
 
-                <input
-                    type="text"
-                    id="donor"
-                    placeholder="Enter Donor Name"
-                >
+                </form>
 
-                <button type="submit">
-                    Add Book
-                </button>
-
-            </form>
-
-            <p id="addMessage"></p>
-
-        </section>
+            </section>
 
 
-        <!-- AVAILABLE BOOKS -->
-        <section id="availableBooks" class="section">
+            <!-- FOOTER -->
 
-            <h2>Available Books</h2>
+            <footer>
 
-            <input
-                type="text"
-                id="search"
-                placeholder="Search by book title..."
-            >
+                <p>
+                    Digital Public Library and Book Exchange System
+                </p>
 
-            <div id="bookList">
-                <p>Loading books...</p>
-            </div>
+                <p>
+                    Manage | Borrow | Return | Exchange
+                </p>
 
-        </section>
+            </footer>
 
+        </main>
 
-        <!-- BORROWING RECORDS -->
-        <section id="borrowings" class="section">
-
-            <h2>Borrowing Records</h2>
-
-            <div id="borrowingList">
-                <p>No borrowing records available.</p>
-            </div>
-
-            <h3>Return a Book</h3>
-
-            <form id="returnForm">
-
-                <input
-                    type="text"
-                    id="returnBorrowingId"
-                    placeholder="Enter Borrowing ID"
-                    required
-                >
-
-                <button type="submit">
-                    Return Book
-                </button>
-
-            </form>
-
-        </section>
-
-
-        <!-- BOOK EXCHANGE -->
-        <section id="exchange" class="section">
-
-            <h2>Request Book Exchange</h2>
-
-            <form id="exchangeForm">
-
-                <input
-                    type="text"
-                    id="requesterName"
-                    placeholder="Enter Your Name"
-                    required
-                >
-
-                <input
-                    type="text"
-                    id="offeredBookId"
-                    placeholder="Your Book ID (Example: AB123)"
-                    maxlength="5"
-                    required
-                >
-
-                <input
-                    type="text"
-                    id="requestedBookId"
-                    placeholder="Requested Book ID (Example: XY456)"
-                    maxlength="5"
-                    required
-                >
-
-                <button type="submit">
-                    Submit Exchange Request
-                </button>
-
-            </form>
-
-            <h3>Exchange Requests</h3>
-
-            <div id="exchangeList">
-                <p>No exchange requests available.</p>
-            </div>
-
-        </section>
-
-
-        <!-- DELETE BOOK -->
-        <section id="deleteBook" class="section">
-
-            <h2>Delete a Book</h2>
-
-            <form id="deleteForm">
-
-                <input
-                    type="text"
-                    id="deleteBookId"
-                    placeholder="Enter 5-character Book ID"
-                    maxlength="5"
-                    required
-                >
-
-                <button type="submit" class="delete-button">
-                    Delete Book
-                </button>
-
-            </form>
-
-        </section>
-
-    </main>
-
-
-    <!-- FOOTER -->
-    <footer class="footer">
-        <p>Digital Public Library and Book Exchange System</p>
-        <p>Manage Books Easily and Efficiently</p>
-    </footer>
+    </div>
 
 
     <!-- JAVASCRIPT -->
+
     <script src="script.js"></script>
 
 </body>
+
 </html>
