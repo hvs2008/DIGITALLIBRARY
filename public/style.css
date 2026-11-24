@@ -1,5 +1,7 @@
 
-/* GENERAL SETTINGS */
+/* ========================================
+   GENERAL SETTINGS
+======================================== */
 
 * {
     margin: 0;
@@ -9,6 +11,7 @@
 
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 25px;
 }
 
 body {
@@ -17,62 +20,99 @@ body {
     color: #333;
 }
 
-/* HEADER */
+/* ========================================
+   DASHBOARD LAYOUT
+======================================== */
 
-header {
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ========================================
+   SIDEBAR
+======================================== */
+
+.sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: #102c4c;
+    color: white;
+    padding: 25px 15px;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.sidebar h2 {
+    text-align: center;
+    font-size: 27px;
+    margin-bottom: 35px;
+    color: white;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar nav a {
+    color: white;
+    text-decoration: none;
+    padding: 13px 15px;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.sidebar nav a:hover {
+    background: #198754;
+}
+
+/* ========================================
+   MAIN CONTENT
+======================================== */
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 25px 35px;
+}
+
+/* ========================================
+   HEADER
+======================================== */
+
+.top-header {
     background: #173b65;
     color: white;
     text-align: center;
     padding: 30px 15px;
+    border-radius: 10px;
+    margin-bottom: 30px;
 }
 
-header h1 {
+.top-header h1 {
     font-size: 32px;
     margin-bottom: 10px;
 }
 
-header p {
+.top-header p {
     font-size: 16px;
 }
 
-/* NAVIGATION */
-
-nav {
-    background: #102c4c;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 15px;
-}
-
-nav a {
-    color: white;
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-}
-
-nav a:hover {
-    background: #198754;
-}
-
-/* MAIN CONTENT */
-
-main {
-    width: 90%;
-    max-width: 1100px;
-    margin: 30px auto;
-}
-
-/* SECTIONS */
+/* ========================================
+   SECTIONS
+======================================== */
 
 section {
     background: white;
     padding: 25px;
     margin-bottom: 25px;
     border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    scroll-margin-top: 20px;
 }
 
 section h2 {
@@ -85,15 +125,22 @@ section h3 {
     color: #34495e;
 }
 
-/* DASHBOARD */
+section > p {
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
 
-.dashboard {
+/* ========================================
+   DASHBOARD CARDS
+======================================== */
+
+.dashboard-cards {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
-.stat {
+.dashboard-card {
     background: #e9f2fc;
     padding: 25px 15px;
     text-align: center;
@@ -101,20 +148,28 @@ section h3 {
     border-left: 5px solid #198754;
 }
 
-.stat h3 {
+.dashboard-card h3 {
     font-size: 15px;
     margin: 0 0 12px;
+    color: #34495e;
 }
 
-.stat p {
+.dashboard-card p {
     font-size: 28px;
     font-weight: bold;
     color: #173b65;
 }
 
-/* INPUT FIELDS */
+/* ========================================
+   INPUT FIELDS AND FORMS
+======================================== */
 
-input {
+form {
+    margin-top: 15px;
+}
+
+input,
+select {
     display: block;
     width: 100%;
     padding: 13px;
@@ -122,14 +177,19 @@ input {
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 15px;
+    background: white;
+    color: #333;
 }
 
-input:focus {
+input:focus,
+select:focus {
     outline: none;
     border-color: #198754;
 }
 
-/* BUTTONS */
+/* ========================================
+   BUTTONS
+======================================== */
 
 button {
     background: #198754;
@@ -140,6 +200,7 @@ button {
     font-size: 15px;
     cursor: pointer;
     margin: 8px 5px 8px 0;
+    transition: 0.3s;
 }
 
 button:hover {
@@ -154,11 +215,12 @@ button:hover {
     background: #a71d2a;
 }
 
-/* BOOK AND RECORD CARDS */
+/* ========================================
+   AVAILABLE BOOK CARDS
+   Matches script.js: book-card
+======================================== */
 
-.book,
-.record,
-.exchange-record {
+.book-card {
     background: #f8f9fa;
     border: 1px solid #ddd;
     border-left: 4px solid #198754;
@@ -167,14 +229,135 @@ button:hover {
     margin: 12px 0;
 }
 
-.book p,
-.record p,
-.exchange-record p {
+.book-card h3 {
+    color: #173b65;
+    margin: 0 0 12px;
+}
+
+.book-card p {
+    margin: 5px 0;
+    line-height: 1.5;
+}
+
+/* ========================================
+   BORROWING RECORD CARDS
+   Matches script.js: borrowing-card
+======================================== */
+
+.borrowing-card {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-left: 4px solid #198754;
+    border-radius: 7px;
+    padding: 18px;
+    margin: 12px 0;
+}
+
+.borrowing-card h3 {
+    color: #173b65;
+    margin: 0 0 12px;
+}
+
+.borrowing-card p {
     margin: 8px 0;
     line-height: 1.5;
 }
 
-/* FOOTER */
+/* ========================================
+   EXCHANGE REQUEST CARDS
+   Matches script.js: exchange-card
+======================================== */
+
+#exchangeList {
+    margin-top: 20px;
+}
+
+.exchange-card {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-left: 4px solid #198754;
+    border-radius: 7px;
+    padding: 18px;
+    margin: 12px 0;
+}
+
+.exchange-card h3 {
+    color: #173b65;
+    margin: 0 0 12px;
+}
+
+.exchange-card p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+/* ========================================
+   EXCHANGE STATUS
+======================================== */
+
+.exchange-status {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: bold;
+    background: #e9f2fc;
+    color: #173b65;
+}
+
+.exchange-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.exchange-status.approved {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.exchange-status.rejected {
+    background: #f8d7da;
+    color: #842029;
+}
+
+.status-management {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+}
+
+.status-management label {
+    display: block;
+    margin-bottom: 8px;
+    color: #34495e;
+}
+
+.status-management select {
+    max-width: 250px;
+}
+
+/* ========================================
+   HORIZONTAL LINE
+======================================== */
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 25px 0;
+}
+
+/* ========================================
+   SUCCESS MESSAGE
+======================================== */
+
+#addMessage {
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+/* ========================================
+   FOOTER
+======================================== */
 
 footer {
     background: #173b65;
@@ -182,37 +365,70 @@ footer {
     text-align: center;
     padding: 25px;
     line-height: 1.8;
+    border-radius: 10px;
+    margin-top: 25px;
 }
 
-/* RESPONSIVE DESIGN */
+/* ========================================
+   RESPONSIVE DESIGN
+======================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
 
-    main {
-        width: 94%;
-    }
-
-    .dashboard {
+    .dashboard-cards {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    nav {
+    .main-content {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .dashboard-container {
         flex-direction: column;
-        text-align: center;
     }
 
-    header h1 {
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        min-height: auto;
+        height: auto;
+        position: relative;
+        padding: 20px;
+    }
+
+    .sidebar h2 {
+        margin-bottom: 20px;
+    }
+
+    .sidebar nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .main-content {
+        padding: 18px;
+    }
+
+    .top-header h1 {
         font-size: 25px;
     }
 }
 
 @media (max-width: 450px) {
 
-    .dashboard {
+    .dashboard-cards {
         grid-template-columns: 1fr;
     }
 
     section {
         padding: 18px;
+    }
+
+    .sidebar nav {
+        flex-direction: column;
     }
 }
