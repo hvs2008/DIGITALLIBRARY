@@ -1,264 +1,240 @@
-
 const API = "/api";
 
-// ======================================
-// 1. ADD A BOOK
-// ======================================
+// ========================================
+// COMMON FUNCTIONS
+// ========================================
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[character]);
+}
+
+async function apiRequest(url, options = {}) {
+
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(data.message || "Something went wrong");
+    }
+
+    return data;
+}
+
+function getValue(id) {
+    return document.getElementById(id)?.value.trim() || "";
+}
+
+// ========================================
+// 1. ADD BOOK
+// ========================================
 
 async function addBook(event) {
     event.preventDefault();
 
-    const title = document.getElementById("title").value.trim();
-    const author = document.getElementById("author").value.trim();
-    const category = document.getElementById("category").value.trim();
-    const donor = document.getElementById("donor").value.trim();
-
-    const message = document.getElementById("addMessage");
-
     try {
-        const response = await fetch(`${API}/books`, {
+
+        const book = {
+            title: getValue("title"),
+            author: getValue("author"),
+            category: getValue("category"),
+            donor: getValue("donor")
+        };
+
+        const data = await apiRequest(`${API}/books`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                title,
-                author,
-                category,
-                donor
-            })
+            body: JSON.stringify(book)
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message || "Unable to add book.");
-        }
-
-        message.textContent =
-            `Book added successfully! Your Book ID is ${result.book.id}`;
-
-        message.style.color = "green";
+        document.getElementById("addMessage").textContent =
+            `Book added successfully! Book ID: ${data.book.id}`;
 
         document.getElementById("addBookForm").reset();
 
         await refreshAll();
 
     } catch (error) {
-        console.error("Add Book Error:", error);
-
-        message.textContent = error.message;
-        message.style.color = "red";
+        alert(error.message);
     }
 }
 
-
-// ======================================
-// 2. DISPLAY AND SEARCH BOOKS
-// ======================================
+// ========================================
+// 2. DISPLAY BOOKS
+// ========================================
 
 async function displayBooks() {
-    try {
-        const search = document.getElementById("search").value.trim();
 
-        const response = await fetch(
+    const bookList = document.getElementById("bookList");
+
+    if (!bookList) return;
+
+    try {
+
+        const search = getValue("search");
+
+        const books = await apiRequest(
             `${API}/books/search?title=${encodeURIComponent(search)}`
         );
-
-        if (!response.ok) {
-            throw new Error("Unable to fetch books.");
-        }
-
-        const books = await response.json();
-
-        const bookList = document.getElementById("bookList");
-
-        bookList.innerHTML = "";
 
         if (books.length === 0) {
             bookList.innerHTML = "<p>No books found.</p>";
             return;
         }
 
-        books.forEach(book => {
+        bookList.innerHTML = books.map(book => `
 
-            const div = document.createElement("div");
-            div.className = "book";
+            <div class="book-card">
 
-            // BOOK ID
-            const id = document.createElement("h3");
-            id.textContent = `Book ID: ${book.id}`;
-            id.style.color = "#2563eb";
+                <h3>${escapeHTML(book.title)}</h3>
 
-            div.appendChild(id);
+                <p><strong>Book ID:</strong> ${escapeHTML(book.id)}</p>
 
-            // COPY ID
-            const copyButton = document.createElement("button");
-            copyButton.textContent = "Copy ID";
+                <p><strong>Author:</strong> ${escapeHTML(book.author)}</p>
 
-            copyButton.onclick = async () => {
-                try {
-                    await navigator.clipboard.writeText(book.id);
-                    alert("Book ID copied: " + book.id);
-                } catch (error) {
-                    alert("Unable to copy ID.");
+                <p><strong>Category:</strong> ${escapeHTML(book.category)}</p>
+
+                <p><strong>Donor:</strong> ${escapeHTML(book.donor)}</p>
+
+                <p><strong>Status:</strong> ${escapeHTML(book.status)}</p>
+
+                ${
+                    String(book.status).toLowerCase() === "available"
+                    ? `
+                        <button onclick="borrowBook('${escapeHTML(book.id)}')">
+                            Borrow Book
+                        </button>
+                    `
+                    : ""
                 }
-            };
 
-            div.appendChild(copyButton);
+                <button onclick="copyBookId('${escapeHTML(book.id)}')">
+                    Copy Book ID
+                </button>
 
-            // BOOK DETAILS
-            const details = document.createElement("p");
+            </div>
 
-            details.textContent =
-                `Title: ${book.title}
-                 | Author: ${book.author}
-                 | Category: ${book.category}
-                 | Donor: ${book.donor}
-                 | Status: ${book.status}`;
-
-            div.appendChild(details);
-
-            // BORROW OPTION
-            if (book.status === "available") {
-
-                const input = document.createElement("input");
-                input.placeholder = "Enter borrower name";
-
-                const borrowButton = document.createElement("button");
-                borrowButton.textContent = "Borrow";
-
-                borrowButton.onclick = () => {
-                    borrowBook(book.id, input.value);
-                };
-
-                div.appendChild(input);
-                div.appendChild(borrowButton);
-            }
-
-            bookList.appendChild(div);
-        });
+        `).join("");
 
     } catch (error) {
-        console.error("Display Books Error:", error);
-
-        document.getElementById("bookList").textContent =
-            "Unable to load books. Check server connection.";
+        bookList.innerHTML = escapeHTML(error.message);
     }
 }
 
+// ========================================
+// 3. COPY BOOK ID
+// ========================================
 
-// ======================================
-// 3. BORROW A BOOK
-// ======================================
+async function copyBookId(id) {
 
-async function borrowBook(id, borrowerName) {
+    try {
+        await navigator.clipboard.writeText(id);
+        alert("Book ID copied: " + id);
+    } catch {
+        alert("Unable to copy Book ID.");
+    }
+}
 
-    if (!borrowerName.trim()) {
-        alert("Please enter borrower name.");
+// ========================================
+// 4. BORROW BOOK
+// ========================================
+
+async function borrowBook(id) {
+
+    const borrowerName = prompt("Enter your name:");
+
+    if (!borrowerName || !borrowerName.trim()) {
+        alert("Please enter your name.");
         return;
     }
 
     try {
-        const response = await fetch(`${API}/books/${id}/borrow`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                borrowerName: borrowerName.trim()
-            })
-        });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message);
-        }
+        const data = await apiRequest(
+            `${API}/books/${encodeURIComponent(id)}/borrow`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    borrowerName: borrowerName.trim()
+                })
+            }
+        );
 
         alert(
-            "Book borrowed successfully!\nBorrowing ID: " +
-            result.borrowing.id
+            `Book borrowed successfully!\nBorrowing ID: ${data.borrowing.id}`
         );
 
         await refreshAll();
 
     } catch (error) {
-        alert(error.message || "Unable to borrow book.");
-        console.error(error);
+        alert(error.message);
     }
 }
 
-
-// ======================================
-// 4. DISPLAY BORROWING RECORDS
-// ======================================
+// ========================================
+// 5. DISPLAY BORROWINGS
+// ========================================
 
 async function displayBorrowings() {
 
+    const borrowingList = document.getElementById("borrowingList");
+
+    if (!borrowingList) return;
+
     try {
-        const response = await fetch(`${API}/borrowings`);
 
-        if (!response.ok) {
-            throw new Error("Unable to fetch borrowing records.");
-        }
-
-        const borrowings = await response.json();
-
-        const borrowingList =
-            document.getElementById("borrowingList");
-
-        borrowingList.innerHTML = "";
+        const borrowings = await apiRequest(`${API}/borrowings`);
 
         if (borrowings.length === 0) {
-            borrowingList.innerHTML =
-                "<p>No borrowing records available.</p>";
+            borrowingList.innerHTML = "<p>No borrowing records found.</p>";
             return;
         }
 
-        borrowings.forEach(record => {
+        borrowingList.innerHTML = borrowings.map(item => `
 
-            const div = document.createElement("div");
-            div.className = "record";
+            <div class="borrowing-card">
 
-            const details = document.createElement("p");
+                <h3>Borrowing ID: ${escapeHTML(item.id)}</h3>
 
-            details.textContent =
-                `Borrowing ID: ${record.id}
-                 | Book ID: ${record.bookId}
-                 | Borrower: ${record.borrowerName}
-                 | Status: ${record.status}
-                 | Borrow Date: ${new Date(record.borrowDate).toLocaleDateString()}`;
+                <p><strong>Book ID:</strong> ${escapeHTML(item.bookId)}</p>
 
-            div.appendChild(details);
+                <p><strong>Borrower:</strong> ${escapeHTML(item.borrowerName)}</p>
 
-            if (record.status === "borrowed") {
-                const returnButton = document.createElement("button");
+                <p><strong>Status:</strong> ${escapeHTML(item.status)}</p>
 
-                returnButton.textContent = "Return This Book";
+                ${
+                    item.status === "Borrowed"
+                    ? `
+                        <button onclick="returnBook('${escapeHTML(item.id)}')">
+                            Return Book
+                        </button>
+                    `
+                    : "<p>Returned successfully.</p>"
+                }
 
-                returnButton.onclick = () => {
-                    returnBook(record.id);
-                };
+            </div>
 
-                div.appendChild(returnButton);
-            }
-
-            borrowingList.appendChild(div);
-        });
+        `).join("");
 
     } catch (error) {
-        console.error("Borrowing Records Error:", error);
-
-        document.getElementById("borrowingList").textContent =
-            "Unable to load borrowing records.";
+        borrowingList.innerHTML = escapeHTML(error.message);
     }
 }
 
-
-// ======================================
-// 5. RETURN A BOOK
-// ======================================
+// ========================================
+// 6. RETURN BOOK
+// ========================================
 
 async function returnBook(id) {
 
@@ -267,41 +243,28 @@ async function returnBook(id) {
     }
 
     try {
-        const response = await fetch(
-            `${API}/borrowings/${id}/return`,
+
+        const data = await apiRequest(
+            `${API}/borrowings/${encodeURIComponent(id)}/return`,
             {
                 method: "POST"
             }
         );
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message);
-        }
-
-        alert("Book returned successfully!");
-
-        document.getElementById("returnBorrowingId").value = "";
+        alert(data.message);
 
         await refreshAll();
 
     } catch (error) {
-        alert(error.message || "Unable to return book.");
+        alert(error.message);
     }
 }
-
-
-// ======================================
-// 6. RETURN USING BORROWING ID FORM
-// ======================================
 
 async function returnBookById(event) {
 
     event.preventDefault();
 
-    const id = document.getElementById("returnBorrowingId")
-        .value.trim().toUpperCase();
+    const id = getValue("returnBorrowingId");
 
     if (!id) {
         alert("Enter Borrowing ID.");
@@ -309,55 +272,54 @@ async function returnBookById(event) {
     }
 
     await returnBook(id);
+
+    document.getElementById("returnForm").reset();
 }
 
-
-// ======================================
-// 7. REQUEST BOOK EXCHANGE
-// ======================================
+// ========================================
+// 7. REQUEST EXCHANGE
+// ========================================
 
 async function requestExchange(event) {
 
     event.preventDefault();
 
-    const requesterName =
-        document.getElementById("requesterName").value.trim();
+    const requesterName = getValue("requesterName");
 
-    const offeredBookId =
-        document.getElementById("offeredBookId").value.trim().toUpperCase();
+    const offeredBookId = getValue("offeredBookId").toUpperCase();
 
-    const requestedBookId =
-        document.getElementById("requestedBookId").value.trim().toUpperCase();
+    const requestedBookId = getValue("requestedBookId").toUpperCase();
 
-    if (!/^[A-Z]{2}[0-9]{3}$/.test(offeredBookId) ||
-        !/^[A-Z]{2}[0-9]{3}$/.test(requestedBookId)) {
+    const idPattern = /^[A-Z]{2}[0-9]{3}$/;
 
-        alert("Enter valid 5-character Book IDs (Example: AB123).");
+    if (!idPattern.test(offeredBookId) ||
+        !idPattern.test(requestedBookId)) {
+
+        alert("Book ID must contain 2 letters and 3 numbers.");
+        return;
+    }
+
+    if (offeredBookId === requestedBookId) {
+        alert("You cannot exchange a book with itself.");
         return;
     }
 
     try {
-        const response = await fetch(`${API}/exchanges`, {
+
+        const data = await apiRequest(`${API}/exchanges`, {
+
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+
             body: JSON.stringify({
                 requesterName,
                 offeredBookId,
                 requestedBookId
             })
+
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message);
-        }
-
         alert(
-            "Exchange request submitted successfully!\nExchange ID: " +
-            result.exchange.id
+            `Exchange request submitted successfully!\nExchange ID: ${data.exchange.id}`
         );
 
         document.getElementById("exchangeForm").reset();
@@ -365,185 +327,276 @@ async function requestExchange(event) {
         await refreshAll();
 
     } catch (error) {
-        alert(error.message || "Unable to submit exchange request.");
-        console.error(error);
+        alert(error.message);
     }
 }
 
-
-// ======================================
+// ========================================
 // 8. DISPLAY EXCHANGE REQUESTS
-// ======================================
+// ADMINISTRATOR DASHBOARD
+// ========================================
 
 async function displayExchanges() {
 
+    const exchangeList = document.getElementById("exchangeList");
+
+    if (!exchangeList) return;
+
     try {
-        const response = await fetch(`${API}/exchanges`);
 
-        if (!response.ok) {
-            throw new Error("Unable to fetch exchanges.");
-        }
-
-        const exchanges = await response.json();
-
-        const exchangeList =
-            document.getElementById("exchangeList");
-
-        exchangeList.innerHTML = "";
+        const exchanges = await apiRequest(`${API}/exchanges`);
 
         if (exchanges.length === 0) {
-            exchangeList.innerHTML =
-                "<p>No exchange requests available.</p>";
+
+            exchangeList.innerHTML = `
+                <p>No exchange requests available.</p>
+            `;
+
             return;
         }
 
-        exchanges.forEach(exchange => {
+        exchangeList.innerHTML = exchanges.map(exchange => {
 
-            const div = document.createElement("div");
-            div.className = "record";
+            const status = exchange.status || "Pending";
 
-            const details = document.createElement("p");
+            return `
 
-            details.textContent =
-                `Exchange ID: ${exchange.id}
-                 | Requester: ${exchange.requesterName}
-                 | Offered Book: ${exchange.offeredBookId}
-                 | Requested Book: ${exchange.requestedBookId}
-                 | Status: ${exchange.status}`;
+                <div class="exchange-card">
 
-            div.appendChild(details);
+                    <h3>
+                        Exchange ID: ${escapeHTML(exchange.id)}
+                    </h3>
 
-            exchangeList.appendChild(div);
-        });
+                    <p>
+                        <strong>Requester:</strong>
+                        ${escapeHTML(exchange.requesterName)}
+                    </p>
+
+                    <p>
+                        <strong>Offered Book:</strong>
+                        ${escapeHTML(exchange.offeredBookId)}
+                    </p>
+
+                    <p>
+                        <strong>Requested Book:</strong>
+                        ${escapeHTML(exchange.requestedBookId)}
+                    </p>
+
+                    <p>
+                        <strong>Current Status:</strong>
+
+                        <span class="exchange-status ${status.toLowerCase()}">
+                            ${escapeHTML(status)}
+                        </span>
+
+                    </p>
+
+                    <div class="status-management">
+
+                        <label>
+                            <strong>Update Status:</strong>
+                        </label>
+
+                        <select id="status-${escapeHTML(exchange.id)}">
+
+                            <option value="Pending"
+                                ${status === "Pending" ? "selected" : ""}>
+                                Pending
+                            </option>
+
+                            <option value="Approved"
+                                ${status === "Approved" ? "selected" : ""}>
+                                Approved
+                            </option>
+
+                            <option value="Rejected"
+                                ${status === "Rejected" ? "selected" : ""}>
+                                Rejected
+                            </option>
+
+                        </select>
+
+                        <button
+                            onclick="updateExchangeStatus('${escapeHTML(exchange.id)}')">
+
+                            Save Status
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
 
     } catch (error) {
-        console.error("Exchange Display Error:", error);
 
-        document.getElementById("exchangeList").textContent =
-            "Unable to load exchange requests.";
+        exchangeList.innerHTML =
+            `<p>${escapeHTML(error.message)}</p>`;
+
     }
 }
 
+// ========================================
+// 9. UPDATE EXCHANGE STATUS
+// ADMINISTRATOR CAN SELECT ANY STATUS
+// ========================================
 
-// ======================================
-// 9. DELETE A BOOK
-// ======================================
+async function updateExchangeStatus(id) {
+
+    const selectElement = document.getElementById(`status-${id}`);
+
+    if (!selectElement) {
+        alert("Status selection not found.");
+        return;
+    }
+
+    const newStatus = selectElement.value;
+
+    if (!confirm(`Change exchange status to ${newStatus}?`)) {
+        return;
+    }
+
+    try {
+
+        const data = await apiRequest(
+            `${API}/exchanges/${encodeURIComponent(id)}/status`,
+            {
+                method: "PATCH",
+
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            }
+        );
+
+        alert(data.message);
+
+        // Refresh exchange records and dashboard
+        await refreshAll();
+
+    } catch (error) {
+
+        alert("Unable to update status: " + error.message);
+
+    }
+}
+
+// ========================================
+// 10. DELETE BOOK
+// ========================================
 
 async function deleteBook(event) {
 
     event.preventDefault();
 
-    const id = document.getElementById("deleteBookId")
-        .value.trim().toUpperCase();
+    const id = getValue("deleteBookId").toUpperCase();
 
     if (!/^[A-Z]{2}[0-9]{3}$/.test(id)) {
-        alert("Enter a valid 5-character Book ID.");
+
+        alert("Enter a valid Book ID. Example: AB123");
+
         return;
     }
 
-    if (!confirm("Are you sure you want to delete this book?")) {
+    if (!confirm(`Delete book ${id}?`)) {
         return;
     }
 
     try {
-        const response = await fetch(`${API}/books/${id}`, {
-            method: "DELETE"
-        });
 
-        const result = await response.json();
+        const data = await apiRequest(
+            `${API}/books/${encodeURIComponent(id)}`,
+            {
+                method: "DELETE"
+            }
+        );
 
-        if (!response.ok) {
-            throw new Error(result.message);
-        }
-
-        alert("Book deleted successfully!");
+        alert(data.message);
 
         document.getElementById("deleteForm").reset();
 
         await refreshAll();
 
     } catch (error) {
-        alert(error.message || "Unable to delete book.");
+
+        alert(error.message);
+
     }
 }
 
-
-// ======================================
-// 10. DASHBOARD STATISTICS
-// ======================================
+// ========================================
+// 11. DASHBOARD STATISTICS
+// ========================================
 
 async function refreshDashboard() {
 
     try {
-        const response = await fetch(`${API}/dashboard`);
 
-        if (!response.ok) {
-            throw new Error("Unable to load dashboard.");
-        }
-
-        const data = await response.json();
+        const data = await apiRequest(`${API}/dashboard`);
 
         document.getElementById("totalCount").textContent =
-            data.totalBooks;
+            data.totalBooks ?? 0;
 
         document.getElementById("availableCount").textContent =
-            data.availableBooks;
+            data.availableBooks ?? 0;
 
         document.getElementById("borrowedCount").textContent =
-            data.borrowedBooks;
+            data.borrowedBooks ?? 0;
 
         document.getElementById("exchangeCount").textContent =
-            data.totalExchanges;
+            data.totalExchanges ?? 0;
 
     } catch (error) {
-        console.error("Dashboard Error:", error);
+
+        console.error("Dashboard error:", error.message);
+
     }
 }
 
-
-// ======================================
-// 11. REFRESH EVERYTHING
-// ======================================
+// ========================================
+// 12. REFRESH ALL DATA
+// ========================================
 
 async function refreshAll() {
 
     await Promise.all([
+
         displayBooks(),
+
         displayBorrowings(),
+
         displayExchanges(),
+
         refreshDashboard()
+
     ]);
+
 }
 
-
-// ======================================
-// 12. CONNECT ALL HTML FORMS
-// ======================================
+// ========================================
+// 13. EVENT LISTENERS
+// ========================================
 
 document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("addBookForm")
-        .addEventListener("submit", addBook);
+        ?.addEventListener("submit", addBook);
 
     document.getElementById("returnForm")
-        .addEventListener("submit", returnBookById);
+        ?.addEventListener("submit", returnBookById);
 
     document.getElementById("exchangeForm")
-        .addEventListener("submit", requestExchange);
+        ?.addEventListener("submit", requestExchange);
 
     document.getElementById("deleteForm")
-        .addEventListener("submit", deleteBook);
+        ?.addEventListener("submit", deleteBook);
 
     document.getElementById("search")
-        .addEventListener("input", displayBooks);
+        ?.addEventListener("input", displayBooks);
 
-    // Load all records when website opens
     refreshAll();
 
 });
-
-
-// Manual refresh button
-async function refreshAllButton() {
-    await refreshAll();
-}
