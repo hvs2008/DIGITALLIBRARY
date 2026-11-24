@@ -1,67 +1,43 @@
 {
-  "books": [
-    {
-      "id": "YV220",
-      "title": "Ramayana",
-      "author": "Valmiki",
-      "category": "epic",
-      "donor": "smvit",
-      "status": "available",
-      "createdAt": "2026-11-21T07:41:47.531Z"
-    },
-    {
-      "id": "UG174",
-      "title": "java",
-      "author": "hvs",
-      "category": "edu",
-      "donor": "smvit",
-      "status": "available",
-      "createdAt": "2026-11-21T07:42:26.410Z"
-    },
-    {
-      "id": "FR723",
-      "title": "om",
-      "author": "uppi",
-      "category": "movie",
-      "donor": "prk",
-      "status": "borrowed",
-      "createdAt": "2026-11-21T08:04:40.474Z"
-    }
-  ],
-  "borrowings": [
-    {
-      "id": "NX152",
-      "bookId": "UG174",
-      "borrowerName": "srinivasa",
-      "borrowDate": "2026-11-21T07:42:58.364Z",
-      "returnDate": "2026-11-21T07:43:16.929Z",
-      "status": "returned"
-    },
-    {
-      "id": "VV353",
-      "bookId": "UG174",
-      "borrowerName": "hvss",
-      "borrowDate": "2026-11-21T07:43:48.617Z",
-      "returnDate": "2026-11-21T07:46:06.983Z",
-      "status": "returned"
-    },
-    {
-      "id": "VR777",
-      "bookId": "FR723",
-      "borrowerName": "ramu",
-      "borrowDate": "2026-11-21T08:04:52.700Z",
-      "returnDate": null,
-      "status": "borrowed"
-    }
-  ],
-  "exchanges": [
-    {
-      "id": "NH956",
-      "requesterName": "hvss",
-      "offeredBookId": "UG174",
-      "requestedBookId": "YV220",
-      "status": "pending",
-      "createdAt": "2026-11-21T07:46:25.184Z"
-    }
-  ]
+    "books": [
+        {
+            "id": "DY763",
+            "title": "Wings of Fire",
+            "author": "A.P.J. Abdul Kalam",
+            "category": "Biography",
+            "donor": "Rahul",
+            "status": "Available",
+            "createdAt": "2026-11-24T05:38:41.769Z"
+        },
+        {
+            "id": "HN861",
+            "title": "The Alchemist",
+            "author": "Paulo Coelho",
+            "category": "Fiction",
+            "donor": "Kiran",
+            "status": "Available",
+            "createdAt": "2026-11-24T05:39:16.458Z"
+        }
+    ],
+    "borrowings": [
+        {
+            "id": "VU192",
+            "bookId": "DY763",
+            "borrowerName": "raam",
+            "status": "Returned",
+            "borrowedAt": "2026-11-24T05:40:26.176Z",
+            "returnedAt": "2026-11-24T05:40:50.434Z"
+        }
+    ],
+    "exchanges": [
+        {
+            "id": "CR897",
+            "requesterName": "Rahul",
+            "offeredBookId": "DY763",
+            "requestedBookId": "HN861",
+            "status": "Approved",
+            "createdAt": "2026-11-24T05:39:55.458Z",
+            "updatedAt": "2026-11-24T05:40:03.963Z"
+        }
+    ]
 }
