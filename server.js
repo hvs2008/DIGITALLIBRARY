@@ -1,70 +1,78 @@
-
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 const app = express();
-
-// PORT DECLARATION (ONLY ONCE)
 const PORT = process.env.PORT || 3000;
 
+// ========================================
 // MIDDLEWARE
+// ========================================
+
 app.use(express.json());
+
 app.use(express.static(path.join(__dirname, "public")));
 
+// ========================================
 // DATABASE
-const DB_FILE = path.join(__dirname, "database.json");
+// ========================================
 
-// INITIALIZE DATABASE
-function initializeDatabase() {
-    if (!fs.existsSync(DB_FILE)) {
-        saveDatabase({
+const databasePath = path.join(__dirname, "database.json");
+
+function readDatabase() {
+    if (!fs.existsSync(databasePath)) {
+        const initialData = {
             books: [],
             borrowings: [],
             exchanges: []
-        });
-    }
-}
+        };
 
-// READ DATABASE
-function readDatabase() {
-    const data = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+        fs.writeFileSync(
+            databasePath,
+            JSON.stringify(initialData, null, 4)
+        );
 
-    if (
-        !Array.isArray(data.books) ||
-        !Array.isArray(data.borrowings) ||
-        !Array.isArray(data.exchanges)
-    ) {
-        throw new Error("Invalid database structure.");
+        return initialData;
     }
 
-    return data;
+    const db = JSON.parse(
+        fs.readFileSync(databasePath, "utf8")
+    );
+
+    db.books = Array.isArray(db.books) ? db.books : [];
+    db.borrowings = Array.isArray(db.borrowings) ? db.borrowings : [];
+    db.exchanges = Array.isArray(db.exchanges) ? db.exchanges : [];
+
+    return db;
 }
 
-// SAVE DATABASE
-function saveDatabase(data) {
+function saveDatabase(db) {
     fs.writeFileSync(
-        DB_FILE,
-        JSON.stringify(data, null, 2)
+        databasePath,
+        JSON.stringify(db, null, 4)
     );
 }
 
-// GENERATE UNIQUE 5-CHARACTER ID
-// 2 ALPHABETS + 3 NUMBERS
+// ========================================
+// GENERATE UNIQUE ID
+// Format: 2 Letters + 3 Numbers
+// Example: AB123
+// ========================================
+
 function generateId(records) {
     let id;
 
     do {
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const numbers = "0123456789";
 
-        const first = letters[crypto.randomInt(26)];
-        const second = letters[crypto.randomInt(26)];
+        const first = letters[Math.floor(Math.random() * 26)];
+        const second = letters[Math.floor(Math.random() * 26)];
 
         let digits = "";
 
         for (let i = 0; i < 3; i++) {
-            digits += crypto.randomInt(10);
+            digits += numbers[Math.floor(Math.random() * 10)];
         }
 
         id = first + second + digits;
@@ -74,39 +82,32 @@ function generateId(records) {
     return id;
 }
 
-// CREATE DATABASE IF NOT EXISTS
-initializeDatabase();
-
-
+// ========================================
 // HOME PAGE
+// ========================================
+
 app.get("/", (req, res) => {
     res.sendFile(
         path.join(__dirname, "public", "index.html")
     );
 });
 
-
-// API STATUS
 app.get("/api", (req, res) => {
     res.json({
         message: "Digital Public Library Backend is running!"
     });
 });
 
-
+// ========================================
 // 1. ADD BOOK
-app.post("/api/books", (req, res) => {
+// ========================================
 
+app.post("/api/books", (req, res) => {
     const { title, author, category, donor } = req.body;
 
-    if (
-        typeof title !== "string" ||
-        typeof author !== "string" ||
-        !title.trim() ||
-        !author.trim()
-    ) {
+    if (!title || !author || !category || !donor) {
         return res.status(400).json({
-            message: "Book title and author are required."
+            message: "Please provide all book details"
         });
     }
 
@@ -114,15 +115,11 @@ app.post("/api/books", (req, res) => {
 
     const book = {
         id: generateId(db.books),
-        title: title.trim(),
-        author: author.trim(),
-        category: typeof category === "string" && category.trim()
-            ? category.trim()
-            : "General",
-        donor: typeof donor === "string" && donor.trim()
-            ? donor.trim()
-            : "Library",
-        status: "available",
+        title,
+        author,
+        category,
+        donor,
+        status: "Available",
         createdAt: new Date().toISOString()
     };
 
@@ -131,72 +128,65 @@ app.post("/api/books", (req, res) => {
     saveDatabase(db);
 
     res.status(201).json({
-        message: "Book added successfully!",
+        message: "Book added successfully",
         book
     });
 });
 
+// ========================================
+// 2. DISPLAY BOOKS
+// ========================================
 
-// 2. DISPLAY ALL BOOKS
 app.get("/api/books", (req, res) => {
-
     const db = readDatabase();
 
     res.json(db.books);
 });
 
-
+// ========================================
 // 3. SEARCH BOOKS
+// ========================================
+
 app.get("/api/books/search", (req, res) => {
-
-    const { title, author } = req.query;
-
     const db = readDatabase();
 
-    const results = db.books.filter(book => {
+    const search = (req.query.title || "").toLowerCase();
 
-        const titleMatch = !title ||
-            book.title.toLowerCase().includes(title.toLowerCase());
+    const books = db.books.filter(book =>
+        book.title.toLowerCase().includes(search)
+    );
 
-        const authorMatch = !author ||
-            book.author.toLowerCase().includes(author.toLowerCase());
-
-        return titleMatch && authorMatch;
-    });
-
-    res.json(results);
+    res.json(books);
 });
 
-
+// ========================================
 // 4. BORROW BOOK
-app.post("/api/books/:id/borrow", (req, res) => {
+// ========================================
 
-    const borrowerName =
-        typeof req.body.borrowerName === "string"
-            ? req.body.borrowerName.trim()
-            : "";
+app.post("/api/books/:id/borrow", (req, res) => {
+    const { borrowerName } = req.body;
 
     if (!borrowerName) {
         return res.status(400).json({
-            message: "Borrower name is required."
+            message: "Borrower name is required"
         });
     }
 
     const db = readDatabase();
 
     const book = db.books.find(
-        b => b.id === req.params.id
+        item => item.id === req.params.id
     );
 
     if (!book) {
         return res.status(404).json({
-            message: "Book not found."
+            message: "Book not found"
         });
     }
 
-    if (book.status !== "available") {
+    if (book.status !== "Available") {
         return res.status(400).json({
-            message: "Book is not available."
+            message: "Book is not available"
         });
     }
 
@@ -204,128 +194,119 @@ app.post("/api/books/:id/borrow", (req, res) => {
         id: generateId(db.borrowings),
         bookId: book.id,
         borrowerName,
-        borrowDate: new Date().toISOString(),
-        returnDate: null,
-        status: "borrowed"
+        status: "Borrowed",
+        borrowedAt: new Date().toISOString()
     };
 
-    book.status = "borrowed";
+    book.status = "Borrowed";
 
     db.borrowings.push(borrowing);
 
     saveDatabase(db);
 
-    res.json({
-        message: "Book borrowed successfully!",
+    res.status(201).json({
+        message: "Book borrowed successfully",
         borrowing
     });
 });
 
+// ========================================
+// 5. DISPLAY BORROWINGS
+// ========================================
 
-// 5. RETURN BOOK
-app.post("/api/borrowings/:id/return", (req, res) => {
-
-    const db = readDatabase();
-
-    const borrowing = db.borrowings.find(
-        b => b.id === req.params.id
-    );
-
-    if (!borrowing || borrowing.status !== "borrowed") {
-        return res.status(404).json({
-            message: "Active borrowing record not found."
-        });
-    }
-
-    const book = db.books.find(
-        b => b.id === borrowing.bookId
-    );
-
-    if (!book) {
-        return res.status(404).json({
-            message: "Book record not found."
-        });
-    }
-
-    borrowing.status = "returned";
-
-    borrowing.returnDate = new Date().toISOString();
-
-    book.status = "available";
-
-    saveDatabase(db);
-
-    res.json({
-        message: "Book returned successfully!"
-    });
-});
-
-
-// 6. VIEW BORROWING RECORDS
 app.get("/api/borrowings", (req, res) => {
-
     const db = readDatabase();
 
     res.json(db.borrowings);
 });
 
+// ========================================
+// 6. RETURN BOOK
+// ========================================
 
-// 7. REQUEST BOOK EXCHANGE
-app.post("/api/exchanges", (req, res) => {
+app.post("/api/borrowings/:id/return", (req, res) => {
+    const db = readDatabase();
 
-    const requesterName =
-        typeof req.body.requesterName === "string"
-            ? req.body.requesterName.trim()
-            : "";
+    const borrowing = db.borrowings.find(
+        item => item.id === req.params.id
+    );
 
-    const offeredBookId =
-        typeof req.body.offeredBookId === "string"
-            ? req.body.offeredBookId.trim()
-            : "";
-
-    const requestedBookId =
-        typeof req.body.requestedBookId === "string"
-            ? req.body.requestedBookId.trim()
-            : "";
-
-    if (
-        !requesterName ||
-        !offeredBookId ||
-        !requestedBookId
-    ) {
-        return res.status(400).json({
-            message: "All exchange details are required."
+    if (!borrowing) {
+        return res.status(404).json({
+            message: "Borrowing record not found"
         });
     }
 
-    if (offeredBookId === requestedBookId) {
+    if (borrowing.status === "Returned") {
         return res.status(400).json({
-            message: "Choose two different books."
+            message: "Book has already been returned"
+        });
+    }
+
+    const book = db.books.find(
+        item => item.id === borrowing.bookId
+    );
+
+    if (book) {
+        book.status = "Available";
+    }
+
+    borrowing.status = "Returned";
+    borrowing.returnedAt = new Date().toISOString();
+
+    saveDatabase(db);
+
+    res.json({
+        message: "Book returned successfully",
+        borrowing
+    });
+});
+
+// ========================================
+// 7. REQUEST BOOK EXCHANGE
+// ========================================
+
+app.post("/api/exchanges", (req, res) => {
+    const {
+        requesterName,
+        offeredBookId,
+        requestedBookId
+    } = req.body;
+
+    if (!requesterName || !offeredBookId || !requestedBookId) {
+        return res.status(400).json({
+            message: "Please provide all exchange details"
         });
     }
 
     const db = readDatabase();
 
     const offeredBook = db.books.find(
-        b => b.id === offeredBookId
+        item => item.id === offeredBookId
     );
 
     const requestedBook = db.books.find(
-        b => b.id === requestedBookId
+        item => item.id === requestedBookId
     );
 
     if (!offeredBook || !requestedBook) {
         return res.status(404).json({
-            message: "One or both books were not found."
+            message: "One or both books were not found"
+        });
+    }
+
+    if (offeredBookId === requestedBookId) {
+        return res.status(400).json({
+            message: "You cannot exchange a book with itself"
         });
     }
 
     if (
-        offeredBook.status !== "available" ||
-        requestedBook.status !== "available"
+        offeredBook.status !== "Available" ||
+        requestedBook.status !== "Available"
     ) {
         return res.status(400).json({
-            message: "Both books must be available."
+            message: "Both books must be available for exchange"
         });
     }
 
@@ -334,7 +315,7 @@ app.post("/api/exchanges", (req, res) => {
         requesterName,
         offeredBookId,
         requestedBookId,
-        status: "pending",
+        status: "Pending",
         createdAt: new Date().toISOString()
     };
 
@@ -343,132 +324,185 @@ app.post("/api/exchanges", (req, res) => {
     saveDatabase(db);
 
     res.status(201).json({
-        message: "Exchange request submitted!",
+        message: "Exchange request submitted successfully",
         exchange
     });
 });
 
+// ========================================
+// 8. DISPLAY EXCHANGE REQUESTS
+// ========================================
 
-// 8. VIEW EXCHANGE REQUESTS
 app.get("/api/exchanges", (req, res) => {
-
     const db = readDatabase();
+
+    // Convert old lowercase statuses to standard format.
+    db.exchanges.forEach(exchange => {
+        const currentStatus = String(
+            exchange.status || "Pending"
+        ).toLowerCase();
+
+        if (currentStatus === "pending") {
+            exchange.status = "Pending";
+        } else if (currentStatus === "approved") {
+            exchange.status = "Approved";
+        } else if (currentStatus === "rejected") {
+            exchange.status = "Rejected";
+        }
+    });
+
+    saveDatabase(db);
 
     res.json(db.exchanges);
 });
 
+// ========================================
+// 9. UPDATE EXCHANGE STATUS
+// ADMINISTRATOR CONTROL
+// ========================================
 
-// 9. DELETE BOOK
-app.delete("/api/books/:id", (req, res) => {
+app.patch("/api/exchanges/:id/status", (req, res) => {
+
+    const { status } = req.body;
+
+    const allowedStatuses = [
+        "Pending",
+        "Approved",
+        "Rejected"
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+            message: "Invalid exchange status"
+        });
+    }
 
     const db = readDatabase();
 
-    const book = db.books.find(
-        b => b.id === req.params.id
+    const exchange = db.exchanges.find(
+        item => item.id === req.params.id
     );
 
-    if (!book) {
+    if (!exchange) {
         return res.status(404).json({
-            message: "Book not found."
+            message: "Exchange request not found"
         });
     }
 
-    if (book.status !== "available") {
-        return res.status(400).json({
-            message: "Cannot delete a borrowed book."
-        });
-    }
+    const oldStatus = exchange.status || "Pending";
 
-    const hasPendingExchange = db.exchanges.some(
-        e =>
-            e.status === "pending" &&
-            (
-                e.offeredBookId === book.id ||
-                e.requestedBookId === book.id
-            )
-    );
+    exchange.status = status;
 
-    if (hasPendingExchange) {
-        return res.status(400).json({
-            message: "Book has a pending exchange request."
-        });
-    }
-
-    db.books = db.books.filter(
-        b => b.id !== req.params.id
-    );
+    exchange.updatedAt = new Date().toISOString();
 
     saveDatabase(db);
 
     res.json({
-        message: "Book deleted successfully!"
+        message: `Exchange status changed from ${oldStatus} to ${status}`,
+        exchange
     });
 });
 
+// ========================================
+// 10. DELETE BOOK
+// ========================================
 
-// 10. DASHBOARD STATISTICS
-app.get("/api/dashboard", (req, res) => {
-
+app.delete("/api/books/:id", (req, res) => {
     const db = readDatabase();
 
-    res.json({
+    const bookIndex = db.books.findIndex(
+        item => item.id === req.params.id
+    );
 
-        totalBooks: db.books.length,
-
-        availableBooks: db.books.filter(
-            b => b.status === "available"
-        ).length,
-
-        borrowedBooks: db.books.filter(
-            b => b.status === "borrowed"
-        ).length,
-
-        totalBorrowings: db.borrowings.length,
-
-        totalExchanges: db.exchanges.length,
-
-        pendingExchanges: db.exchanges.filter(
-            e => e.status === "pending"
-        ).length
-
-    });
-});
-
-
-// UNKNOWN API ROUTES
-app.use("/api", (req, res) => {
-
-    res.status(404).json({
-        message: "API endpoint not found."
-    });
-
-});
-
-
-// ERROR HANDLER
-app.use((err, req, res, next) => {
-
-    console.error("Server error:", err);
-
-    if (res.headersSent) {
-        return next(err);
+    if (bookIndex === -1) {
+        return res.status(404).json({
+            message: "Book not found"
+        });
     }
 
-    const status = err.status || err.statusCode || 500;
+    const book = db.books[bookIndex];
 
-    res.status(status).json({
-        message: status === 400
-            ? "Invalid request data."
-            : "Server error. Check the VS Code terminal."
+    if (book.status === "Borrowed") {
+        return res.status(400).json({
+            message: "Cannot delete a borrowed book"
+        });
+    }
+
+    const hasPendingExchange = db.exchanges.some(exchange =>
+        (
+            exchange.offeredBookId === book.id ||
+            exchange.requestedBookId === book.id
+        ) &&
+        exchange.status === "Pending"
+    );
+
+    if (hasPendingExchange) {
+        return res.status(400).json({
+            message: "Cannot delete a book with a pending exchange request"
+        });
+    }
+
+    db.books.splice(bookIndex, 1);
+
+    saveDatabase(db);
+
+    res.json({
+        message: "Book deleted successfully"
     });
-
 });
 
+// ========================================
+// 11. DASHBOARD
+// ========================================
 
+app.get("/api/dashboard", (req, res) => {
+    const db = readDatabase();
+
+    const totalBooks = db.books.length;
+
+    const availableBooks = db.books.filter(
+        book => book.status === "Available"
+    ).length;
+
+    const borrowedBooks = db.books.filter(
+        book => book.status === "Borrowed"
+    ).length;
+
+    const totalBorrowings = db.borrowings.length;
+
+    const totalExchanges = db.exchanges.length;
+
+    const pendingExchanges = db.exchanges.filter(
+        exchange => exchange.status === "Pending" ||
+            exchange.status === "pending"
+    ).length;
+
+    res.json({
+        totalBooks,
+        availableBooks,
+        borrowedBooks,
+        totalBorrowings,
+        totalExchanges,
+        pendingExchanges
+    });
+});
+
+// ========================================
+// ERROR HANDLING
+// ========================================
+
+app.use((err, req, res, next) => {
+    console.error(err);
+
+    res.status(500).json({
+        message: "Internal server error"
+    });
+});
+
+// ========================================
 // START SERVER
-// PORT IS ALREADY DECLARED AT THE TOP
-app.listen(PORT, "0.0.0.0", () => {
+// ========================================
 
+app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-
 });
